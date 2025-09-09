@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="gu">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Meter Reading UI</title>
+    <style>
+      * {
+        font-size: 16px;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #f2f6fc;
+        margin: 0;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .card {
+        background: #fff;
+        padding: 20px;
+        border-radius: 16px;
+        min-width: 320px;
+        width: 100%;
+        max-width: 360px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        transition: 0.3s;
+      }
+      .card:hover {
+        transform: translateY(-4px);
+      }
+      h3 {
+        margin-top: 0;
+        color: #b30000;
+      }
+      .field {
+        margin-bottom: 16px;
+      }
+      .field label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 14px;
+        font-weight: bold;
+      }
+      input,
+      select {
+        width: 100%;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        font-size: 14px;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: 0.3s;
+      }
+      input:focus,
+      select:focus {
+        border-color: #007bff;
+        outline: none;
+        box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+      }
+      .result {
+        text-align: center;
+        font-size: 20px;
+        font-weight: bold;
+        color: red;
+        margin-top: 20px;
+        padding: 10px;
+        background: #fceaea;
+        border-radius: 10px;
+        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
+      }
+      #settingsBtn {
+        margin-top: 10px;
+        padding: 10px 16px;
+        width: 100%;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(90deg, #ff9800, #ff5722);
+        color: #fff;
+        font-weight: bold;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.3s;
+      }
+      #settingsBtn:hover {
+        opacity: 0.85;
+        transform: translateY(-2px);
+      }
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.5);
+        opacity: 0;
+        pointer-events: none;
+        transition: 0.3s;
+      }
+      .modal.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .settings-content,
+      .add-model-content,
+      .add-speed-content {
+        background: #fffbe6;
+        padding: 20px;
+        border-radius: 12px;
+        width: 320px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+      }
+      .add-model-content {
+        background: #e6f7ff;
+      }
+      .add-speed-content {
+        background: #f0fff0;
+      }
+      .btn-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+      }
+      .btn-row button {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      #cancelAddModel,
+      #cancelAddSpeed {
+        background: #ccc;
+      }
+      #saveAddModel,
+      #saveAddSpeed {
+        background: #28a745;
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h3>મીટરના રીડિંગ પરથી વિધાની ગણતરી</h3>
+
+      <div class="field">
+        <label>મીટરના રીડિંગ</label>
+        <input type="number" id="meterReading" value="352" />
+      </div>
+
+      <div class="field">
+        <label>ઓરણી મોડેલ</label>
+        <select id="modelSelect">
+          <option value="" hidden selected disabled>-- પસંદ કરો --</option>
+          <option value="10">મોડેલ A</option>
+          <option value="20">મોડેલ B</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>વાવેતરની ગતિ</label>
+        <select id="speedSelect">
+          <option value="" hidden selected disabled>-- પસંદ કરો --</option>
+          <option value="5">ધીમી</option>
+          <option value="15">ઝડપી</option>
+        </select>
+      </div>
+
+      <button id="settingsBtn">⚙ સેટિંગ્સ</button>
+
+      <div class="result" id="resultBox">કુલ: 0.00 વીધા</div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+      <div class="settings-content">
+        <h3>સેટિંગ મેનુ</h3>
+        <div class="field">
+          <label>1 આટામાં ગ્રાઉંડ વિલે કાપેલ અંતર (ઈંચ)</label>
+          <input type="number" id="gapInput" value="66.0" />
+        </div>
+        <div class="field">
+          <label>1 એકર = કેટલા વીધા</label>
+          <input type="number" id="acreInput" value="2.50" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Model Modal -->
+    <div class="modal" id="addModelModal">
+      <div class="add-model-content">
+        <h3>નવું મોડેલ ઉમેરો</h3>
+        <div class="field">
+          <label>મોડલનું નામ</label>
+          <input type="text" id="newModelLabel" placeholder="જેમ: મોડેલ C" />
+        </div>
+        <div class="field">
+          <label>મોડેલનું મૂલ્ય (સંખ્યા)</label>
+          <input type="number" id="newModelValue" placeholder="જેમ: 25" />
+        </div>
+        <div class="btn-row">
+          <button id="cancelAddModel">Cancel</button>
+          <button id="saveAddModel">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Speed Modal -->
+    <div class="modal" id="addSpeedModal">
+      <div class="add-speed-content">
+        <h3>નવી ગતિ ઉમેરો</h3>
+        <div class="field">
+          <label>ગતિનું નામ</label>
+          <input type="text" id="newSpeedLabel" placeholder="જેમ: મધ્યમ" />
+        </div>
+        <div class="field">
+          <label>ગતિનું મૂલ્ય (સંખ્યા)</label>
+          <input type="number" id="newSpeedValue" placeholder="જેમ: 12" />
+        </div>
+        <div class="btn-row">
+          <button id="cancelAddSpeed">Cancel</button>
+          <button id="saveAddSpeed">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const modelSelect = document.getElementById("modelSelect");
+      const speedSelect = document.getElementById("speedSelect");
+      const resultBox = document.getElementById("resultBox");
+      const settingsBtn = document.getElementById("settingsBtn");
+      const settingsModal = document.getElementById("settingsModal");
+      const gapInput = document.getElementById("gapInput");
+      const acreInput = document.getElementById("acreInput");
+      const meterReading = document.getElementById("meterReading");
+
+      const addModelModal = document.getElementById("addModelModal");
+      const newModelLabel = document.getElementById("newModelLabel");
+      const newModelValue = document.getElementById("newModelValue");
+      const saveAddModel = document.getElementById("saveAddModel");
+      const cancelAddModel = document.getElementById("cancelAddModel");
+
+      const addSpeedModal = document.getElementById("addSpeedModal");
+      const newSpeedLabel = document.getElementById("newSpeedLabel");
+      const newSpeedValue = document.getElementById("newSpeedValue");
+      const saveAddSpeed = document.getElementById("saveAddSpeed");
+      const cancelAddSpeed = document.getElementById("cancelAddSpeed");
+
+      // === Ensure Add Option for both dropdowns ===
+      function ensureAddOption(select, text) {
+        if (!select.querySelector("option[value='add']")) {
+          const addOpt = document.createElement("option");
+          addOpt.value = "add";
+          addOpt.textContent = text;
+          select.appendChild(addOpt);
+        }
+      }
+
+      function loadModelsIntoSelect() {
+        ensureAddOption(modelSelect, "➕ નવું મોડલ ઉમેરો");
+        const addOpt = modelSelect.querySelector("option[value='add']");
+        const models = JSON.parse(localStorage.getItem("models") || "[]");
+        [...modelSelect.options].forEach((opt) => {
+          if (opt.dataset && opt.dataset.dyn === "1") opt.remove();
+        });
+        models.forEach((m) => {
+          if (
+            ![...modelSelect.options].some(
+              (o) => String(o.value) === String(m.value)
+            )
+          ) {
+            const opt = document.createElement("option");
+            opt.value = String(m.value);
+            opt.textContent = m.label || m.value;
+            opt.dataset.dyn = "1";
+            modelSelect.insertBefore(opt, addOpt);
+          }
+        });
+      }
+
+      function loadSpeedsIntoSelect() {
+        ensureAddOption(speedSelect, "➕ નવી ગતિ ઉમેરો");
+        const addOpt = speedSelect.querySelector("option[value='add']");
+        const speeds = JSON.parse(localStorage.getItem("speeds") || "[]");
+        [...speedSelect.options].forEach((opt) => {
+          if (opt.dataset && opt.dataset.dyn === "1") opt.remove();
+        });
+        speeds.forEach((s) => {
+          if (
+            ![...speedSelect.options].some(
+              (o) => String(o.value) === String(s.value)
+            )
+          ) {
+            const opt = document.createElement("option");
+            opt.value = String(s.value);
+            opt.textContent = s.label || s.value;
+            opt.dataset.dyn = "1";
+            speedSelect.insertBefore(opt, addOpt);
+          }
+        });
+      }
+
+      function loadSettings() {
+        gapInput.value = localStorage.getItem("gap") || 66.0;
+        acreInput.value = localStorage.getItem("acre") || 2.5;
+        meterReading.value = localStorage.getItem("reading") || 352;
+        loadModelsIntoSelect();
+        loadSpeedsIntoSelect();
+        modelSelect.value = localStorage.getItem("model") || "";
+        speedSelect.value = localStorage.getItem("speed") || "";
+        calculateTotal();
+      }
+
+      function saveAndUpdate() {
+        localStorage.setItem("gap", gapInput.value);
+        localStorage.setItem("acre", acreInput.value);
+        localStorage.setItem("model", modelSelect.value);
+        localStorage.setItem("speed", speedSelect.value);
+        localStorage.setItem("reading", meterReading.value);
+        calculateTotal();
+      }
+
+      function calculateTotal() {
+        const total =
+          (((parseFloat(meterReading.value) || 0) *
+            (parseFloat(gapInput.value) || 0) *
+            (parseFloat(speedSelect.value) || 0) *
+            (parseFloat(modelSelect.value) || 0)) /
+            6272640) *
+          parseFloat(acreInput.value || 0);
+        resultBox.innerText = "કુલ: " + total.toFixed(2) + " વીધા";
+      }
+
+      settingsBtn.addEventListener("click", () => {
+        settingsModal.classList.add("active");
+      });
+
+      window.addEventListener("click", (e) => {
+        if (e.target === settingsModal)
+          settingsModal.classList.remove("active");
+        if (e.target === addModelModal)
+          addModelModal.classList.remove("active");
+        if (e.target === addSpeedModal)
+          addSpeedModal.classList.remove("active");
+      });
+
+      [gapInput, acreInput, meterReading].forEach((el) => {
+        el.addEventListener("input", saveAndUpdate);
+        el.addEventListener("change", saveAndUpdate);
+      });
+
+      modelSelect.addEventListener("change", function () {
+        const val = this.value;
+        if (val === "add") {
+          this.value = "";
+          addModelModal.classList.add("active");
+        } else {
+          saveAndUpdate();
+        }
+      });
+
+      speedSelect.addEventListener("change", function () {
+        const val = this.value;
+        if (val === "add") {
+          this.value = "";
+          addSpeedModal.classList.add("active");
+        } else {
+          saveAndUpdate();
+        }
+      });
+
+      cancelAddModel.addEventListener("click", () => {
+        addModelModal.classList.remove("active");
+        newModelLabel.value = "";
+        newModelValue.value = "";
+      });
+
+      saveAddModel.addEventListener("click", () => {
+        const label = newModelLabel.value.trim();
+        const value = newModelValue.value.trim();
+        if (!label || !value || isNaN(value)) {
+          alert("કૃપા કરીને માન્ય નામ અને સંખ્યા દાખલ કરો.");
+          return;
+        }
+        ensureAddOption(modelSelect, "➕ નવું મોડલ ઉમેરો");
+        const addOpt = modelSelect.querySelector("option[value='add']");
+        const newOpt = document.createElement("option");
+        newOpt.value = String(value);
+        newOpt.textContent = label;
+        newOpt.dataset.dyn = "1";
+        modelSelect.insertBefore(newOpt, addOpt);
+
+        const models = JSON.parse(localStorage.getItem("models") || "[]");
+        if (!models.some((m) => String(m.value) === String(value))) {
+          models.push({ value: String(value), label });
+          localStorage.setItem("models", JSON.stringify(models));
+        }
+        modelSelect.value = String(value);
+        saveAndUpdate();
+        addModelModal.classList.remove("active");
+        newModelLabel.value = "";
+        newModelValue.value = "";
+      });
+
+      cancelAddSpeed.addEventListener("click", () => {
+        addSpeedModal.classList.remove("active");
+        newSpeedLabel.value = "";
+        newSpeedValue.value = "";
+      });
+
+      saveAddSpeed.addEventListener("click", () => {
+        const label = newSpeedLabel.value.trim();
+        const value = newSpeedValue.value.trim();
+        if (!label || !value || isNaN(value)) {
+          alert("કૃપા કરીને માન્ય નામ અને સંખ્યા દાખલ કરો.");
+          return;
+        }
+        ensureAddOption(speedSelect, "➕ નવી ગતિ ઉમેરો");
+        const addOpt = speedSelect.querySelector("option[value='add']");
+        const newOpt = document.createElement("option");
+        newOpt.value = String(value);
+        newOpt.textContent = label;
+        newOpt.dataset.dyn = "1";
+        speedSelect.insertBefore(newOpt, addOpt);
+
+        const speeds = JSON.parse(localStorage.getItem("speeds") || "[]");
+        if (!speeds.some((s) => String(s.value) === String(value))) {
+          speeds.push({ value: String(value), label });
+          localStorage.setItem("speeds", JSON.stringify(speeds));
+        }
+        speedSelect.value = String(value);
+        saveAndUpdate();
+        addSpeedModal.classList.remove("active");
+        newSpeedLabel.value = "";
+        newSpeedValue.value = "";
+      });
+
+      loadSettings();
+    </script>
+  </body>
+</html>
